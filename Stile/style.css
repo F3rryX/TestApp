@@ -377,9 +377,15 @@ body.dark-mode .mode-card {
     align-items: center;
     padding: 12px 15px;
     margin-bottom: 10px;
-    background: #f8f9fa;
+    background: var(--card-bg);
     border-radius: 8px;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid var(--button-primary-bg);
+    transition: background 0.3s ease;
+}
+
+body.dark-mode .home-record-item.fastest {
+    background: linear-gradient(90deg, #3a3520 0%, var(--card-bg) 100%);
+    border-left-color: #ffd700;
 }
 
 .home-record-item.fastest {
@@ -390,11 +396,11 @@ body.dark-mode .mode-card {
 .home-record-config {
     flex: 1;
     font-size: 0.95rem;
-    color: #555;
+    color: var(--text-primary);
 }
 
 .home-record-config strong {
-    color: #333;
+    color: var(--text-primary);
 }
 
 .home-record-stats {
@@ -403,18 +409,18 @@ body.dark-mode .mode-card {
 
 .home-record-time {
     font-weight: bold;
-    color: #667eea;
+    color: var(--button-primary-bg);
     font-size: 1.1rem;
 }
 
 .home-record-player {
     font-size: 0.85rem;
-    color: #666;
+    color: var(--text-secondary);
 }
 
 .no-records {
     text-align: center;
-    color: #999;
+    color: var(--text-secondary);
     padding: 20px;
     font-style: italic;
 }
@@ -425,15 +431,16 @@ body.dark-mode .mode-card {
     align-items: center;
     padding: 12px 15px;
     margin-bottom: 10px;
-    background: #f8f9fa;
+    background: var(--card-bg);
     border-radius: 8px;
     border-left: 4px solid #9ca3af;
+    transition: background 0.3s ease;
 }
 
 .custom-game-info {
     flex: 1;
     font-size: 0.95rem;
-    color: #555;
+    color: var(--text-primary);
 }
 
 .custom-game-stats {
@@ -442,7 +449,7 @@ body.dark-mode .mode-card {
 
 .custom-game-score {
     font-weight: bold;
-    color: #667eea;
+    color: var(--button-primary-bg);
     font-size: 1rem;
 }
 
@@ -567,7 +574,7 @@ body.dark-mode .mode-card {
     transform: translate(-50%, -50%);
     font-size: 1.8rem;
     font-weight: bold;
-    color: #667eea;
+    color: var(--button-primary-bg);
 }
 
 .timer-text.warning {
@@ -635,25 +642,26 @@ body.dark-mode .mode-card {
 
 .option {
     padding: 18px 24px;
-    background: #f8f9fa;
-    border: 2px solid #e0e0e0;
+    background: var(--card-bg);
+    border: 2px solid var(--input-border);
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.3s;
     font-size: 1rem;
     text-align: left;
+    color: var(--text-primary);
 }
 
 .option:hover {
-    background: #e9ecef;
-    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+    border-color: var(--button-primary-bg);
     transform: translateX(5px);
 }
 
 .option.selected {
-    background: #667eea;
+    background: var(--button-primary-bg);
     color: white;
-    border-color: #667eea;
+    border-color: var(--button-primary-bg);
 }
 
 .option.correct {
@@ -738,20 +746,20 @@ body.dark-mode .mode-card {
 
 .score-label {
     font-size: 1.2rem;
-    color: #666;
+    color: var(--text-secondary);
     margin-bottom: 10px;
 }
 
 .score-number {
     font-size: 3rem;
     font-weight: bold;
-    color: #667eea;
+    color: var(--button-primary-bg);
     margin-bottom: 10px;
 }
 
 .score-percentage {
     font-size: 1.5rem;
-    color: #999;
+    color: var(--text-secondary);
 }
 
 .score-message {
@@ -785,19 +793,19 @@ body.dark-mode .mode-card {
 .time-stats {
     margin: 20px 0;
     padding: 15px;
-    background: #f8f9fa;
+    background: rgba(102, 126, 234, 0.1);
     border-radius: 10px;
 }
 
 .time-stats p {
     margin: 8px 0;
     font-size: 1.1rem;
-    color: #555;
+    color: var(--text-primary);
 }
 
 .record-message {
     font-weight: bold;
-    color: #667eea;
+    color: var(--button-primary-bg);
 }
 
 .record-message.new-record {
@@ -814,12 +822,12 @@ body.dark-mode .mode-card {
 .leaderboard-section {
     margin: 30px 0;
     padding: 20px;
-    background: #f8f9fa;
+    background: rgba(102, 126, 234, 0.1);
     border-radius: 10px;
 }
 
 .leaderboard-section h3 {
-    color: #667eea;
+    color: var(--button-primary-bg);
     margin-bottom: 15px;
     text-align: center;
 }
