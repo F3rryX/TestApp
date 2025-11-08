@@ -39,6 +39,8 @@ const scoreDisplay = document.getElementById('score');
 const questionText = document.getElementById('question-text');
 const optionsContainer = document.getElementById('options-container');
 const nextBtn = document.getElementById('next-btn');
+const nextBtnMobile = document.getElementById('next-btn-mobile');
+const prevBtn = document.getElementById('prev-btn');
 
 const finalScore = document.getElementById('final-score');
 const scorePercentage = document.getElementById('score-percentage');
@@ -49,14 +51,15 @@ const leaderboard = document.getElementById('leaderboard');
 const answersReview = document.getElementById('answers-review');
 const retryBtn = document.getElementById('retry-btn');
 const newQuizBtn = document.getElementById('new-quiz-btn');
-const downloadRecordsBtn = document.getElementById('download-records-btn');
+const shareBtn = document.getElementById('share-btn');
 
 // Event Listeners
 startBtn.addEventListener('click', startQuiz);
 nextBtn.addEventListener('click', nextQuestion);
+nextBtnMobile.addEventListener('click', nextQuestion);
 retryBtn.addEventListener('click', retryQuiz);
 newQuizBtn.addEventListener('click', newQuiz);
-downloadRecordsBtn.addEventListener('click', downloadRecordsCSV);
+shareBtn.addEventListener('click', shareResults);
 
 // Carica la classifica nella home all'avvio
 window.addEventListener('DOMContentLoaded', displayHomeLeaderboard);
@@ -266,6 +269,7 @@ function displayQuestion() {
     
     // Nascondi il pulsante "Prossima Domanda"
     nextBtn.style.display = 'none';
+    nextBtnMobile.style.display = 'none';
     
     // Avvia il timer
     startTimer();
@@ -400,7 +404,8 @@ function selectOption(selectedIndex) {
     });
     
     // Mostra il pulsante "Prossima Domanda"
-    nextBtn.style.display = 'block';
+    nextBtn.style.display = 'flex';
+    nextBtnMobile.style.display = 'block';
 }
 
 // Funzione per passare alla prossima domanda
@@ -607,6 +612,56 @@ function downloadRecordsCSV() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+// Funzione per condividere i risultati
+function shareResults() {
+    const totalQuestions = currentQuiz.questions.length;
+    const percentage = Math.round((currentQuiz.score / totalQuestions) * 100);
+    const categoryName = getCategoryName(currentQuiz.category);
+    
+    // Conta risposte corrette e sbagliate
+    const correct = currentQuiz.score;
+    const wrong = totalQuestions - currentQuiz.score;
+    
+    // Crea il testo da condividere
+    let shareText = `🍕 Quiz Pizze Desideria 🍕\n\n`;
+    shareText += `📊 Risultato:\n`;
+    shareText += `✅ Risposte corrette: ${correct}/${totalQuestions}\n`;
+    shareText += `❌ Risposte sbagliate: ${wrong}/${totalQuestions}\n`;
+    shareText += `📈 Percentuale: ${percentage}%\n`;
+    shareText += `⏱️ Tempo totale: ${currentQuiz.totalTime} secondi\n\n`;
+    shareText += `🎯 Categoria: ${categoryName}\n`;
+    shareText += `❓ Domande: ${totalQuestions}\n\n`;
+    
+    // Aggiungi emoji in base al risultato
+    if (percentage >= 90) {
+        shareText += `🌟 Eccellente! Esperto delle pizze!\n\n`;
+    } else if (percentage >= 70) {
+        shareText += `👏 Molto bene!\n\n`;
+    } else if (percentage >= 50) {
+        shareText += `📚 Buon tentativo!\n\n`;
+    } else {
+        shareText += `💪 Continua ad allenarti!\n\n`;
+    }
+    
+    shareText += `Metti alla prova le tue abilità!\n`;
+    shareText += `🔗 https://f3rryx.github.io/Desideria/`;
+    
+    // Copia negli appunti
+    navigator.clipboard.writeText(shareText).then(() => {
+        // Cambia temporaneamente il testo del pulsante
+        const originalText = shareBtn.innerHTML;
+        shareBtn.innerHTML = '✅ Copiato negli appunti!';
+        shareBtn.style.background = '#28a745';
+        
+        setTimeout(() => {
+            shareBtn.innerHTML = originalText;
+            shareBtn.style.background = '';
+        }, 2000);
+    }).catch(err => {
+        alert('Errore nella copia: ' + err);
+    });
 }
 
 // Funzione per riprovare lo stesso quiz

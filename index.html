@@ -93,15 +93,26 @@
                 </div>
             </div>
 
-            <div class="question-box">
-                <h2 id="question-text">Caricamento...</h2>
-                <div id="options-container" class="options-container">
-                    <!-- Le opzioni verranno inserite qui dinamicamente -->
+            <div class="quiz-content-wrapper">
+                <button id="prev-btn" class="nav-arrow nav-arrow-left" style="display: none;" disabled>
+                    <span>◀</span>
+                </button>
+                
+                <div class="question-box">
+                    <h2 id="question-text">Caricamento...</h2>
+                    <div id="options-container" class="options-container">
+                        <!-- Le opzioni verranno inserite qui dinamicamente -->
+                    </div>
+                    
+                    <!-- Pulsante mobile in basso -->
+                    <div class="quiz-controls-mobile">
+                        <button id="next-btn-mobile" class="btn btn-secondary" style="display: none;">Prossima Domanda ➜</button>
+                    </div>
                 </div>
-            </div>
 
-            <div class="quiz-controls">
-                <button id="next-btn" class="btn btn-secondary" style="display: none;">Prossima Domanda</button>
+                <button id="next-btn" class="nav-arrow nav-arrow-right" style="display: none;">
+                    <span>▶</span>
+                </button>
             </div>
         </div>
 
@@ -124,7 +135,7 @@
                 <div class="leaderboard-section">
                     <h3>🏆 Classifica Record</h3>
                     <div id="leaderboard"></div>
-                    <button id="download-records-btn" class="btn btn-secondary" style="margin-top: 15px;">📥 Scarica Record (CSV)</button>
+                    <button id="share-btn" class="btn btn-primary" style="margin-top: 15px;">� Condividi Risultato</button>
                 </div>
 
                 <div class="review-section" id="review-section">
@@ -133,8 +144,8 @@
                 </div>
 
                 <div class="results-actions">
-                    <button id="retry-btn" class="btn btn-primary">Riprova</button>
-                    <button id="new-quiz-btn" class="btn btn-secondary">Nuovo Quiz</button>
+                    <button id="retry-btn" class="btn btn-primary">🔄 Riprova</button>
+                    <button id="new-quiz-btn" class="btn btn-secondary">🏠 Home</button>
                 </div>
             </div>
         </div>

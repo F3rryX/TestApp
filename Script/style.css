@@ -222,6 +222,59 @@ header h1 {
     box-shadow: 0 5px 20px rgba(0,0,0,0.1);
 }
 
+/* Quiz Content Wrapper */
+.quiz-content-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+}
+
+/* Navigation Arrows */
+.nav-arrow {
+    flex-shrink: 0;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nav-arrow:hover:not(:disabled) {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+.nav-arrow:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.nav-arrow span {
+    line-height: 1;
+}
+
+.nav-arrow-left {
+    margin-right: auto;
+}
+
+.nav-arrow-right {
+    margin-left: auto;
+}
+
+/* Mobile controls hidden on desktop */
+.quiz-controls-mobile {
+    display: none;
+}
+
 /* Timer */
 .timer-container {
     display: flex;
@@ -319,6 +372,9 @@ header h1 {
     margin-bottom: 20px;
     box-shadow: 0 5px 20px rgba(0,0,0,0.1);
     min-height: 400px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .question-box h2 {
@@ -331,6 +387,7 @@ header h1 {
 .options-container {
     display: grid;
     gap: 15px;
+    flex: 1;
 }
 
 .option {
@@ -375,6 +432,28 @@ header h1 {
 
 .quiz-controls {
     text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    /* Nascondi le frecce laterali su mobile */
+    .nav-arrow {
+        display: none !important;
+    }
+    
+    /* Mostra i controlli mobile */
+    .quiz-controls-mobile {
+        display: block;
+        margin-top: 20px;
+    }
+    
+    .quiz-content-wrapper {
+        flex-direction: column;
+    }
+    
+    #next-btn-mobile {
+        width: 100%;
+    }
 }
 
 /* Results Screen */
