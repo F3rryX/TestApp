@@ -19,10 +19,20 @@ let timer = {
     totalSeconds: 10
 };
 
+// Dark Mode
+const isDarkMode = localStorage.getItem('darkMode') === 'true';
+if (isDarkMode) {
+    document.body.classList.add('dark-mode');
+}
+
 // Elementi DOM
 const setupScreen = document.getElementById('setup-screen');
 const quizScreen = document.getElementById('quiz-screen');
 const resultsScreen = document.getElementById('results-screen');
+
+// Theme toggle
+const themeToggle = document.getElementById('theme-toggle');
+const themeIcon = document.querySelector('.theme-icon');
 
 // Mode selection elements
 const tournamentModeCard = document.getElementById('tournament-mode-card');
@@ -49,6 +59,12 @@ const tournamentLeaderboardContainer = document.getElementById('tournament-leade
 const customGamesContainer = document.getElementById('custom-games-container');
 const categoryTabs = document.querySelectorAll('.category-tab');
 
+// Search elements
+const searchInput = document.getElementById('search-input');
+const searchBtn = document.getElementById('search-btn');
+const clearSearchBtn = document.getElementById('clear-search-btn');
+const searchResultsContainer = document.getElementById('search-results-container');
+
 let selectedCategory = 'all'; // For tournament leaderboard filtering
 
 const timerText = document.getElementById('timer-text');
@@ -74,6 +90,17 @@ const newQuizBtn = document.getElementById('new-quiz-btn');
 const shareBtn = document.getElementById('share-btn');
 
 // Event Listeners
+// Dark mode toggle
+themeToggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('darkMode', isDark);
+    themeIcon.textContent = isDark ? '☀️' : '🌙';
+});
+
+// Set initial icon
+themeIcon.textContent = isDarkMode ? '☀️' : '🌙';
+
 // Mode selection
 tournamentModeCard.addEventListener('click', () => showModeSettings('tournament'));
 customModeCard.addEventListener('click', () => showModeSettings('custom'));
@@ -92,6 +119,13 @@ nextBtnMobile.addEventListener('click', nextQuestion);
 retryBtn.addEventListener('click', retryQuiz);
 newQuizBtn.addEventListener('click', newQuiz);
 shareBtn.addEventListener('click', shareResults);
+
+// Search
+searchBtn.addEventListener('click', performSearch);
+clearSearchBtn.addEventListener('click', clearSearch);
+searchInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') performSearch();
+});
 
 // Category tabs
 categoryTabs.forEach(tab => {
@@ -619,6 +653,9 @@ function saveRecord() {
         mode: currentQuiz.mode
     };
     
+    // Salva anche nei CSV
+    saveToCSV(newRecord, currentQuiz.mode);
+    
     if (currentQuiz.mode === 'tournament') {
         // Salva nei record torneo
         const tournamentRecords = getTournamentRecords();
@@ -971,3 +1008,181 @@ function showScreen(screen) {
         resultsScreen.classList.add('active');
     }
 }
+
+// ========== CSV MANAGEMENT ==========
+
+// Funzione per salvare nei file CSV
+async function saveToCSV(record, mode) {
+    try {
+        const percentage = Math.round((record.score / record.totalQuestions) * 100);
+        const timePerQuestion = record.totalQuestions > 0 ? 
+            (record.time / record.totalQuestions).toFixed(2) : '0.00';
+        
+        const csvLine = `${record.player};${record.time};${record.score}/${record.totalQuestions};${percentage}%;${new Date(record.date).toLocaleString('it-IT')};${record.totalQuestions};${timePerQuestion}`;
+        
+        // Salva in Tutte.csv (tutte le partite)
+        await appendToCSV('CSV/Tutte.csv', csvLine);
+        
+        if (mode === 'tournament') {
+            // Per il torneo, controlla se è il miglior tempo
+            const existingRecords = await loadCSV('CSV/Torneo.csv');
+            const playerRecords = existingRecords.filter(r => r.Nome === record.player);
+            
+            if (playerRecords.length === 0) {
+                // Nessun record esistente, salva questo
+                await appendToCSV('CSV/Torneo.csv', csvLine);
+            } else {
+                // Controlla se questo tempo è migliore
+                const bestTime = Math.min(...playerRecords.map(r => parseFloat(r.Tempo)));
+                if (record.time < bestTime) {
+                    // Nuovo record! Rimuovi il vecchio e aggiungi il nuovo
+                    await replaceRecordInCSV('CSV/Torneo.csv', record.player, csvLine);
+                }
+            }
+        } else {
+            // Custom: salva tutte le partite
+            await appendToCSV('CSV/Custom.csv', csvLine);
+        }
+    } catch (error) {
+        console.error('Errore nel salvataggio CSV:', error);
+    }
+}
+
+// Funzione per caricare un CSV
+async function loadCSV(filename) {
+    try {
+        const response = await fetch(filename);
+        const text = await response.text();
+        const lines = text.trim().split('\n');
+        
+        if (lines.length <= 1) return []; // Solo header o vuoto
+        
+        const headers = lines[0].split(';');
+        const records = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(';');
+            const record = {};
+            headers.forEach((header, index) => {
+                record[header] = values[index] || '';
+            });
+            records.push(record);
+        }
+        
+        return records;
+    } catch (error) {
+        console.error('Errore nel caricamento CSV:', error);
+        return [];
+    }
+}
+
+// Funzione per aggiungere una riga al CSV
+async function appendToCSV(filename, line) {
+    // Nota: Questa è una simulazione - in un ambiente reale serve un backend
+    // Per ora salviamo nel localStorage come backup
+    const key = `csv_${filename}`;
+    const existing = localStorage.getItem(key) || '';
+    localStorage.setItem(key, existing + line + '\n');
+    console.log(`Salvato in ${filename}:`, line);
+}
+
+// Funzione per sostituire un record nel CSV (per il torneo)
+async function replaceRecordInCSV(filename, playerName, newLine) {
+    const key = `csv_${filename}`;
+    const existing = localStorage.getItem(key) || '';
+    const lines = existing.split('\n').filter(l => l.trim());
+    
+    // Rimuovi tutte le righe del giocatore
+    const filtered = lines.filter(line => !line.startsWith(playerName + ';'));
+    
+    // Aggiungi la nuova riga
+    filtered.push(newLine);
+    
+    localStorage.setItem(key, filtered.join('\n') + '\n');
+    console.log(`Aggiornato record in ${filename} per ${playerName}`);
+}
+
+// Funzione di ricerca
+function performSearch() {
+    const query = searchInput.value.trim().toLowerCase();
+    if (!query) {
+        alert('Inserisci un nome da cercare!');
+        return;
+    }
+    
+    searchResultsContainer.innerHTML = '<div class="loading">🔍 Ricerca in corso...</div>';
+    
+    setTimeout(() => {
+        // Carica i dati da Tutte.csv (dal localStorage per ora)
+        const allGamesKey = 'csv_CSV/Tutte.csv';
+        const csvData = localStorage.getItem(allGamesKey) || '';
+        
+        if (!csvData) {
+            searchResultsContainer.innerHTML = '<div class="no-results">Nessuna partita trovata nel database.</div>';
+            return;
+        }
+        
+        const lines = csvData.split('\n').filter(l => l.trim());
+        const results = lines.filter(line => {
+            const playerName = line.split(';')[0].toLowerCase();
+            return playerName.includes(query);
+        });
+        
+        if (results.length === 0) {
+            searchResultsContainer.innerHTML = `<div class="no-results">Nessun risultato trovato per "${query}"</div>`;
+            return;
+        }
+        
+        displaySearchResults(results);
+    }, 300);
+}
+
+// Funzione per visualizzare i risultati della ricerca
+function displaySearchResults(results) {
+    searchResultsContainer.innerHTML = '';
+    
+    results.forEach(line => {
+        const parts = line.split(';');
+        const [nome, tempo, corrette, percentuale, data, domande, tempoPerDomanda] = parts;
+        
+        // Determina se è torneo o custom (dal localStorage separato)
+        const tournamentKey = 'csv_CSV/Torneo.csv';
+        const tournamentData = localStorage.getItem(tournamentKey) || '';
+        const isTournament = tournamentData.includes(line);
+        
+        const item = document.createElement('div');
+        item.className = 'search-result-item';
+        
+        item.innerHTML = `
+            <div class="search-result-header">
+                <span class="search-result-name">${nome}</span>
+                <span class="search-result-mode ${isTournament ? 'tournament' : 'custom'}">
+                    ${isTournament ? '🏆 Torneo' : '⚙️ Custom'}
+                </span>
+            </div>
+            <div class="search-result-stats">
+                <span>📊 ${corrette} (${percentuale})</span>
+                <span>⏱️ ${tempo}s</span>
+                <span>📝 ${domande} domande</span>
+                <span>📅 ${data}</span>
+            </div>
+        `;
+        
+        searchResultsContainer.appendChild(item);
+    });
+    
+    const resultCount = document.createElement('p');
+    resultCount.style.textAlign = 'center';
+    resultCount.style.marginTop = '15px';
+    resultCount.style.fontWeight = 'bold';
+    resultCount.style.color = 'var(--button-primary-bg)';
+    resultCount.textContent = `${results.length} risultat${results.length === 1 ? 'o' : 'i'} trovat${results.length === 1 ? 'o' : 'i'}`;
+    searchResultsContainer.insertBefore(resultCount, searchResultsContainer.firstChild);
+}
+
+// Funzione per pulire la ricerca
+function clearSearch() {
+    searchInput.value = '';
+    searchResultsContainer.innerHTML = '';
+}
+

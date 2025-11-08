@@ -4,15 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quiz Pizze Desideria</title>
-    <link rel="icon" type="image/png" href="Desideria3.png">
+    <link rel="icon" type="image/png" href="Stile/Desideria3.png">
     <link rel="stylesheet" href="Script/style.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <img src="Desideria3.png" alt="Logo Desideria" class="logo">
+            <img src="Stile/Desideria3.png" alt="Logo Desideria" class="logo">
             <h1>Quiz Pizze Desideria</h1>
             <p class="subtitle">Impara gli ingredienti delle pizze divertendoti!</p>
+            <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
+                <span class="theme-icon">🌙</span>
+            </button>
         </header>
 
         <div id="setup-screen" class="screen active">
@@ -117,6 +120,18 @@
                     <h3>⚙️ Tutte le Partite Custom</h3>
                     <p class="home-leaderboard-subtitle">Cronologia delle tue sessioni di allenamento</p>
                     <div id="custom-games-container"></div>
+                </div>
+
+                <!-- Ricerca Partite -->
+                <div class="home-leaderboard" style="margin-top: 30px;">
+                    <h3>🔍 Ricerca Tutte le Partite</h3>
+                    <p class="home-leaderboard-subtitle">Cerca tra tutte le partite giocate (Torneo e Custom)</p>
+                    <div class="search-container">
+                        <input type="text" id="search-input" placeholder="Cerca per nome giocatore..." class="search-input">
+                        <button id="search-btn" class="btn btn-primary">🔍 Cerca</button>
+                        <button id="clear-search-btn" class="btn btn-secondary">✖ Pulisci</button>
+                    </div>
+                    <div id="search-results-container"></div>
                 </div>
             </div>
         </div>
