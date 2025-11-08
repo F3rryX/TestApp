@@ -17,58 +17,124 @@
 
         <div id="setup-screen" class="screen active">
             <div class="setup-box">
-                <h2>Configura il tuo Quiz</h2>
+                <h2>Scegli la Modalità</h2>
                 
-                <div class="form-group">
-                    <label for="category-select">Categoria:</label>
-                    <select id="category-select">
-                        <option value="all">Tutte le Pizze</option>
-                        <option value="classiche">Solo Classiche</option>
-                        <option value="bianche">Solo Bianche</option>
-                        <option value="calzoni">Solo Calzoni</option>
-                    </select>
+                <!-- Mode Selection -->
+                <div class="mode-selection">
+                    <div class="mode-card" id="tournament-mode-card">
+                        <div class="mode-icon">🏆</div>
+                        <h3>Modalità Torneo</h3>
+                        <p>15 domande miste, nessun limite di tempo</p>
+                        <p class="mode-detail">Competizione standard per la classifica</p>
+                    </div>
+                    <div class="mode-card" id="custom-mode-card">
+                        <div class="mode-icon">⚙️</div>
+                        <h3>Modalità Custom</h3>
+                        <p>Personalizza tutto a tuo piacimento</p>
+                        <p class="mode-detail">Allenamento e pratica libera</p>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="num-questions">Numero di domande:</label>
-                    <input type="number" id="num-questions" min="1" max="50" value="10">
+                <!-- Tournament Settings (hidden by default) -->
+                <div id="tournament-settings" class="mode-settings" style="display: none;">
+                    <h3>🏆 Modalità Torneo</h3>
+                    <p class="mode-info">15 domande miste • Nessun limite di tempo</p>
+                    
+                    <div class="form-group">
+                        <label for="tournament-category">Categoria:</label>
+                        <select id="tournament-category">
+                            <option value="all">Tutte le Pizze</option>
+                            <option value="classiche">Solo Classiche</option>
+                            <option value="bianche">Solo Bianche</option>
+                            <option value="calzoni">Solo Calzoni</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tournament-player-name">Il tuo nome:</label>
+                        <input type="text" id="tournament-player-name" placeholder="Inserisci il tuo nome" required>
+                    </div>
+
+                    <div class="mode-actions">
+                        <button id="start-tournament-btn" class="btn btn-primary">🏆 Inizia Torneo</button>
+                        <button id="back-from-tournament-btn" class="btn btn-secondary">← Indietro</button>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="question-type">Tipo di domanda:</label>
-                    <select id="question-type">
-                        <option value="ingredients">Quali sono gli ingredienti?</option>
-                        <option value="pizza">Quale pizza ha questi ingredienti?</option>
-                        <option value="confusing">Trova l'ingrediente sbagliato</option>
-                        <option value="mixed">Misto</option>
-                    </select>
-                </div>
+                <!-- Custom Settings (hidden by default) -->
+                <div id="custom-settings" class="mode-settings" style="display: none;">
+                    <h3>⚙️ Modalità Custom</h3>
+                    
+                    <div class="form-group">
+                        <label for="custom-category">Categoria:</label>
+                        <select id="custom-category">
+                            <option value="all">Tutte le Pizze</option>
+                            <option value="classiche">Solo Classiche</option>
+                            <option value="bianche">Solo Bianche</option>
+                            <option value="calzoni">Solo Calzoni</option>
+                        </select>
+                    </div>
 
-                <div class="form-group">
-                    <label for="timer-seconds">Tempo per domanda (secondi):</label>
-                    <select id="timer-seconds">
-                        <option value="5">5 secondi</option>
-                        <option value="10" selected>10 secondi</option>
-                        <option value="15">15 secondi</option>
-                        <option value="20">20 secondi</option>
-                        <option value="30">30 secondi</option>
-                        <option value="60">60 secondi</option>
-                        <option value="0">Nessun limite</option>
-                    </select>
-                </div>
+                    <div class="form-group">
+                        <label for="custom-num-questions">Numero di domande:</label>
+                        <input type="number" id="custom-num-questions" min="1" max="50" value="10">
+                    </div>
 
-                <div class="form-group">
-                    <label for="player-name">Il tuo nome (per la classifica):</label>
-                    <input type="text" id="player-name" placeholder="Inserisci il tuo nome" value="">
-                </div>
+                    <div class="form-group">
+                        <label for="custom-question-type">Tipo di domanda:</label>
+                        <select id="custom-question-type">
+                            <option value="ingredients">Quali sono gli ingredienti?</option>
+                            <option value="pizza">Quale pizza ha questi ingredienti?</option>
+                            <option value="confusing">Trova l'ingrediente sbagliato</option>
+                            <option value="mixed">Misto</option>
+                        </select>
+                    </div>
 
-                <button id="start-btn" class="btn btn-primary">Inizia Quiz</button>
+                    <div class="form-group">
+                        <label for="custom-timer-seconds">Tempo per domanda (secondi):</label>
+                        <select id="custom-timer-seconds">
+                            <option value="5">5 secondi</option>
+                            <option value="10" selected>10 secondi</option>
+                            <option value="15">15 secondi</option>
+                            <option value="20">20 secondi</option>
+                            <option value="30">30 secondi</option>
+                            <option value="60">60 secondi</option>
+                            <option value="0">Nessun limite</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="custom-player-name">Il tuo nome (opzionale):</label>
+                        <input type="text" id="custom-player-name" placeholder="Inserisci il tuo nome">
+                    </div>
+
+                    <div class="mode-actions">
+                        <button id="start-custom-btn" class="btn btn-primary">⚙️ Inizia Custom</button>
+                        <button id="back-from-custom-btn" class="btn btn-secondary">← Indietro</button>
+                    </div>
+                </div>
                 
                 <!-- Tabella Record nella Home -->
                 <div class="home-leaderboard">
-                    <h3>🏆 Record Migliori Tempi</h3>
-                    <p class="home-leaderboard-subtitle">I tempi più veloci per quiz perfetti (100% corretto)</p>
-                    <div id="home-leaderboard-container"></div>
+                    <h3>🏆 Classifica Torneo</h3>
+                    <p class="home-leaderboard-subtitle">I migliori giocatori della modalità torneo per categoria</p>
+                    
+                    <!-- Tabs per categorie -->
+                    <div class="category-tabs">
+                        <button class="category-tab active" data-category="all">Tutte</button>
+                        <button class="category-tab" data-category="classiche">Classiche</button>
+                        <button class="category-tab" data-category="bianche">Bianche</button>
+                        <button class="category-tab" data-category="calzoni">Calzoni</button>
+                    </div>
+                    
+                    <div id="tournament-leaderboard-container"></div>
+                </div>
+
+                <!-- Partite Custom -->
+                <div class="home-leaderboard" style="margin-top: 30px;">
+                    <h3>⚙️ Tutte le Partite Custom</h3>
+                    <p class="home-leaderboard-subtitle">Cronologia delle tue sessioni di allenamento</p>
+                    <div id="custom-games-container"></div>
                 </div>
             </div>
         </div>
@@ -133,9 +199,9 @@
                 </div>
 
                 <div class="leaderboard-section">
-                    <h3>🏆 Classifica Record</h3>
+                    <h3 id="results-leaderboard-title">🏆 Classifica</h3>
                     <div id="leaderboard"></div>
-                    <button id="share-btn" class="btn btn-primary" style="margin-top: 15px;">� Condividi Risultato</button>
+                    <button id="share-btn" class="btn btn-primary" style="margin-top: 15px;">📤 Condividi Risultato</button>
                 </div>
 
                 <div class="review-section" id="review-section">

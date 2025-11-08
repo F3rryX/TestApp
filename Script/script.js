@@ -1,5 +1,6 @@
 // Variabili globali
 let currentQuiz = {
+    mode: 'custom', // 'tournament' o 'custom'
     category: 'all',
     numQuestions: 10,
     questionType: 'ingredients',
@@ -23,13 +24,33 @@ const setupScreen = document.getElementById('setup-screen');
 const quizScreen = document.getElementById('quiz-screen');
 const resultsScreen = document.getElementById('results-screen');
 
-const categorySelect = document.getElementById('category-select');
-const numQuestionsInput = document.getElementById('num-questions');
-const questionTypeSelect = document.getElementById('question-type');
-const timerSecondsSelect = document.getElementById('timer-seconds');
-const playerNameInput = document.getElementById('player-name');
-const startBtn = document.getElementById('start-btn');
-const homeLeaderboardContainer = document.getElementById('home-leaderboard-container');
+// Mode selection elements
+const tournamentModeCard = document.getElementById('tournament-mode-card');
+const customModeCard = document.getElementById('custom-mode-card');
+const tournamentSettings = document.getElementById('tournament-settings');
+const customSettings = document.getElementById('custom-settings');
+
+// Tournament elements
+const tournamentCategory = document.getElementById('tournament-category');
+const tournamentPlayerName = document.getElementById('tournament-player-name');
+const startTournamentBtn = document.getElementById('start-tournament-btn');
+const backFromTournamentBtn = document.getElementById('back-from-tournament-btn');
+
+// Custom elements
+const customCategory = document.getElementById('custom-category');
+const customNumQuestions = document.getElementById('custom-num-questions');
+const customQuestionType = document.getElementById('custom-question-type');
+const customTimerSeconds = document.getElementById('custom-timer-seconds');
+const customPlayerName = document.getElementById('custom-player-name');
+const startCustomBtn = document.getElementById('start-custom-btn');
+const backFromCustomBtn = document.getElementById('back-from-custom-btn');
+
+// Home leaderboard
+const tournamentLeaderboardContainer = document.getElementById('tournament-leaderboard-container');
+const customGamesContainer = document.getElementById('custom-games-container');
+const categoryTabs = document.querySelectorAll('.category-tab');
+
+let selectedCategory = 'all'; // For tournament leaderboard filtering
 
 const timerText = document.getElementById('timer-text');
 const timerProgress = document.getElementById('timer-progress');
@@ -54,29 +75,108 @@ const newQuizBtn = document.getElementById('new-quiz-btn');
 const shareBtn = document.getElementById('share-btn');
 
 // Event Listeners
-startBtn.addEventListener('click', startQuiz);
+// Mode selection
+tournamentModeCard.addEventListener('click', () => showModeSettings('tournament'));
+customModeCard.addEventListener('click', () => showModeSettings('custom'));
+backFromTournamentBtn.addEventListener('click', () => showModeSelection());
+backFromCustomBtn.addEventListener('click', () => showModeSelection());
+
+// Start quiz
+startTournamentBtn.addEventListener('click', startTournamentQuiz);
+startCustomBtn.addEventListener('click', startCustomQuiz);
+
+// Quiz navigation
 nextBtn.addEventListener('click', nextQuestion);
 nextBtnMobile.addEventListener('click', nextQuestion);
+
+// Results
 retryBtn.addEventListener('click', retryQuiz);
 newQuizBtn.addEventListener('click', newQuiz);
 shareBtn.addEventListener('click', shareResults);
 
-// Carica la classifica nella home all'avvio
-window.addEventListener('DOMContentLoaded', displayHomeLeaderboard);
+// Category tabs
+categoryTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        categoryTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        selectedCategory = tab.dataset.category;
+        displayTournamentLeaderboard();
+    });
+});
 
-// Funzione per iniziare il quiz
-function startQuiz() {
-    currentQuiz.category = categorySelect.value;
-    currentQuiz.numQuestions = parseInt(numQuestionsInput.value);
-    currentQuiz.questionType = questionTypeSelect.value;
-    currentQuiz.playerName = playerNameInput.value.trim() || 'Anonimo';
+// Carica la classifica nella home all'avvio
+window.addEventListener('DOMContentLoaded', () => {
+    displayTournamentLeaderboard();
+    displayCustomGames();
+});
+
+// Funzione per mostrare la selezione modalità
+function showModeSelection() {
+    document.querySelector('.mode-selection').style.display = 'grid';
+    tournamentSettings.style.display = 'none';
+    customSettings.style.display = 'none';
+}
+
+// Funzione per mostrare le impostazioni di una modalità
+function showModeSettings(mode) {
+    document.querySelector('.mode-selection').style.display = 'none';
+    
+    if (mode === 'tournament') {
+        tournamentSettings.style.display = 'block';
+        customSettings.style.display = 'none';
+    } else {
+        customSettings.style.display = 'block';
+        tournamentSettings.style.display = 'none';
+    }
+}
+
+// Funzione per iniziare il quiz torneo
+function startTournamentQuiz() {
+    const playerName = tournamentPlayerName.value.trim();
+    if (!playerName) {
+        alert('Inserisci il tuo nome per partecipare al torneo!');
+        return;
+    }
+    
+    currentQuiz.mode = 'tournament';
+    currentQuiz.category = tournamentCategory.value;
+    currentQuiz.numQuestions = 15;
+    currentQuiz.questionType = 'mixed';
+    currentQuiz.playerName = playerName;
+    currentQuiz.currentQuestionIndex = 0;
+    currentQuiz.score = 0;
+    currentQuiz.answers = [];
+    currentQuiz.startTime = Date.now();
+    
+    // Timer infinito per torneo
+    timer.totalSeconds = 0;
+
+    // Genera le domande
+    currentQuiz.questions = generateQuestions(
+        currentQuiz.category,
+        currentQuiz.numQuestions,
+        currentQuiz.questionType
+    );
+
+    // Mostra lo schermo del quiz
+    showScreen('quiz');
+    displayQuestion();
+}
+
+// Funzione per iniziare il quiz custom
+function startCustomQuiz() {
+    currentQuiz.mode = 'custom';
+    currentQuiz.category = customCategory.value;
+    currentQuiz.numQuestions = parseInt(customNumQuestions.value);
+    currentQuiz.questionType = customQuestionType.value;
+    currentQuiz.playerName = customPlayerName.value.trim() || 'Anonimo';
     currentQuiz.currentQuestionIndex = 0;
     currentQuiz.score = 0;
     currentQuiz.answers = [];
     currentQuiz.startTime = Date.now();
     
     // Imposta il tempo del timer
-    timer.totalSeconds = parseInt(timerSecondsSelect.value);
+    timer.totalSeconds = parseInt(customTimerSeconds.value);
 
     // Genera le domande
     currentQuiz.questions = generateQuestions(
@@ -432,6 +532,14 @@ function showResults() {
     scorePercentage.textContent = `${percentage}%`;
     totalTimeDisplay.textContent = currentQuiz.totalTime;
     
+    // Aggiorna il titolo della classifica
+    const leaderboardTitle = document.getElementById('results-leaderboard-title');
+    if (currentQuiz.mode === 'tournament') {
+        leaderboardTitle.textContent = '🏆 Classifica Torneo';
+    } else {
+        leaderboardTitle.textContent = '⚙️ Sessione Custom';
+    }
+    
     // Salva il record
     const isNewRecord = saveRecord();
     
@@ -501,9 +609,6 @@ function showResults() {
 
 // Funzione per salvare i record nel localStorage
 function saveRecord() {
-    const records = getRecords();
-    const quizKey = `${currentQuiz.numQuestions}q_${currentQuiz.category}`;
-    
     const newRecord = {
         player: currentQuiz.playerName,
         score: currentQuiz.score,
@@ -511,37 +616,69 @@ function saveRecord() {
         time: currentQuiz.totalTime,
         date: new Date().toISOString(),
         category: currentQuiz.category,
-        numQuestions: currentQuiz.numQuestions
+        numQuestions: currentQuiz.numQuestions,
+        mode: currentQuiz.mode
     };
     
-    if (!records[quizKey]) {
-        records[quizKey] = [];
-    }
-    
-    records[quizKey].push(newRecord);
-    
-    // Ordina per punteggio (decrescente) e poi per tempo (crescente)
-    records[quizKey].sort((a, b) => {
-        if (b.score !== a.score) {
-            return b.score - a.score;
+    if (currentQuiz.mode === 'tournament') {
+        // Salva nei record torneo
+        const tournamentRecords = getTournamentRecords();
+        const categoryKey = currentQuiz.category;
+        
+        if (!tournamentRecords[categoryKey]) {
+            tournamentRecords[categoryKey] = [];
         }
-        return a.time - b.time;
-    });
-    
-    // Mantieni solo i top 10
-    records[quizKey] = records[quizKey].slice(0, 10);
-    
-    localStorage.setItem('pizzaQuizRecords', JSON.stringify(records));
-    
-    // Controlla se è un nuovo record (prima posizione)
-    return records[quizKey][0].player === newRecord.player && 
-           records[quizKey][0].date === newRecord.date;
+        
+        tournamentRecords[categoryKey].push(newRecord);
+        
+        // Ordina per punteggio (decrescente) e poi per tempo (crescente)
+        tournamentRecords[categoryKey].sort((a, b) => {
+            if (b.score !== a.score) {
+                return b.score - a.score;
+            }
+            return a.time - b.time;
+        });
+        
+        // Mantieni solo i top 10
+        tournamentRecords[categoryKey] = tournamentRecords[categoryKey].slice(0, 10);
+        
+        localStorage.setItem('pizzaQuizTournamentRecords', JSON.stringify(tournamentRecords));
+        
+        // Controlla se è un nuovo record
+        return tournamentRecords[categoryKey][0].player === newRecord.player && 
+               tournamentRecords[categoryKey][0].date === newRecord.date;
+    } else {
+        // Salva nei record custom (cronologia)
+        const customGames = getCustomGames();
+        customGames.unshift(newRecord); // Aggiungi all'inizio
+        
+        // Mantieni solo le ultime 50 partite
+        if (customGames.length > 50) {
+            customGames.length = 50;
+        }
+        
+        localStorage.setItem('pizzaQuizCustomGames', JSON.stringify(customGames));
+        
+        return false; // Custom non ha "record"
+    }
 }
 
 // Funzione per ottenere tutti i record
 function getRecords() {
     const recordsStr = localStorage.getItem('pizzaQuizRecords');
     return recordsStr ? JSON.parse(recordsStr) : {};
+}
+
+// Funzione per ottenere i record torneo
+function getTournamentRecords() {
+    const recordsStr = localStorage.getItem('pizzaQuizTournamentRecords');
+    return recordsStr ? JSON.parse(recordsStr) : {};
+}
+
+// Funzione per ottenere le partite custom
+function getCustomGames() {
+    const gamesStr = localStorage.getItem('pizzaQuizCustomGames');
+    return gamesStr ? JSON.parse(gamesStr) : [];
 }
 
 // Funzione per ottenere il miglior record per una categoria
@@ -557,34 +694,39 @@ function getBestRecord(numQuestions, category) {
 
 // Funzione per visualizzare la classifica
 function displayLeaderboard() {
-    const records = getRecords();
-    const quizKey = `${currentQuiz.numQuestions}q_${currentQuiz.category}`;
-    const leaderboardData = records[quizKey] || [];
-    
-    if (leaderboardData.length === 0) {
-        leaderboard.innerHTML = '<p style="text-align: center; color: #999;">Nessun record ancora registrato.</p>';
-        return;
+    if (currentQuiz.mode === 'tournament') {
+        const tournamentRecords = getTournamentRecords();
+        const categoryKey = currentQuiz.category;
+        const leaderboardData = tournamentRecords[categoryKey] || [];
+        
+        if (leaderboardData.length === 0) {
+            leaderboard.innerHTML = '<p style="text-align: center; color: #999;">Nessun record ancora registrato.</p>';
+            return;
+        }
+        
+        leaderboard.innerHTML = '';
+        leaderboardData.forEach((record, index) => {
+            const item = document.createElement('div');
+            item.className = `leaderboard-item ${index === 0 ? 'top-1' : index === 1 ? 'top-2' : index === 2 ? 'top-3' : ''}`;
+            
+            const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+            const date = new Date(record.date).toLocaleDateString('it-IT');
+            
+            item.innerHTML = `
+                <span class="leaderboard-rank">${medal}</span>
+                <span class="leaderboard-name">${record.player}</span>
+                <div class="leaderboard-stats">
+                    <div class="leaderboard-score">${record.score}/${record.totalQuestions}</div>
+                    <div>${record.time}s - ${date}</div>
+                </div>
+            `;
+            
+            leaderboard.appendChild(item);
+        });
+    } else {
+        // Per custom, mostra un messaggio diverso
+        leaderboard.innerHTML = '<p style="text-align: center; color: #667eea; font-weight: 600;">Modalità Custom - Allenamento completato! ✅</p>';
     }
-    
-    leaderboard.innerHTML = '';
-    leaderboardData.forEach((record, index) => {
-        const item = document.createElement('div');
-        item.className = `leaderboard-item ${index === 0 ? 'top-1' : index === 1 ? 'top-2' : index === 2 ? 'top-3' : ''}`;
-        
-        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
-        const date = new Date(record.date).toLocaleDateString('it-IT');
-        
-        item.innerHTML = `
-            <span class="leaderboard-rank">${medal}</span>
-            <span class="leaderboard-name">${record.player}</span>
-            <div class="leaderboard-stats">
-                <div class="leaderboard-score">${record.score}/${record.totalQuestions}</div>
-                <div>${record.time}s - ${date}</div>
-            </div>
-        `;
-        
-        leaderboard.appendChild(item);
-    });
 }
 
 // Funzione per scaricare i record come CSV
@@ -685,7 +827,9 @@ function retryQuiz() {
 // Funzione per creare un nuovo quiz
 function newQuiz() {
     stopTimer();
-    displayHomeLeaderboard(); // Aggiorna la classifica quando si torna alla home
+    displayTournamentLeaderboard(); // Aggiorna la classifica quando si torna alla home
+    displayCustomGames(); // Aggiorna la cronologia custom
+    showModeSelection(); // Mostra la selezione modalità
     showScreen('setup');
 }
 
@@ -737,6 +881,80 @@ function displayHomeLeaderboard() {
         `;
         
         homeLeaderboardContainer.appendChild(item);
+    });
+}
+
+// Funzione per visualizzare la classifica torneo
+function displayTournamentLeaderboard() {
+    const tournamentRecords = getTournamentRecords();
+    const categoryRecords = tournamentRecords[selectedCategory] || [];
+    
+    if (categoryRecords.length === 0) {
+        tournamentLeaderboardContainer.innerHTML = `<p class="no-records">Nessun torneo completato in questa categoria. Inizia a giocare!</p>`;
+        return;
+    }
+    
+    tournamentLeaderboardContainer.innerHTML = '';
+    categoryRecords.forEach((record, index) => {
+        const item = document.createElement('div');
+        item.className = `leaderboard-item ${index === 0 ? 'top-1' : index === 1 ? 'top-2' : index === 2 ? 'top-3' : ''}`;
+        
+        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+        const date = new Date(record.date).toLocaleDateString('it-IT');
+        const percentage = Math.round((record.score / record.totalQuestions) * 100);
+        
+        item.innerHTML = `
+            <span class="leaderboard-rank">${medal}</span>
+            <span class="leaderboard-name">${record.player}</span>
+            <div class="leaderboard-stats">
+                <div class="leaderboard-score">${record.score}/${record.totalQuestions} (${percentage}%)</div>
+                <div>⏱️ ${record.time}s - ${date}</div>
+            </div>
+        `;
+        
+        tournamentLeaderboardContainer.appendChild(item);
+    });
+}
+
+// Funzione per visualizzare le partite custom
+function displayCustomGames() {
+    const customGames = getCustomGames();
+    
+    if (customGames.length === 0) {
+        customGamesContainer.innerHTML = '<p class="no-records">Nessuna partita custom ancora giocata. Inizia ad allenarti!</p>';
+        return;
+    }
+    
+    customGamesContainer.innerHTML = '';
+    // Mostra solo le ultime 10
+    const recentGames = customGames.slice(0, 10);
+    
+    recentGames.forEach(game => {
+        const item = document.createElement('div');
+        item.className = 'custom-game-item';
+        
+        const date = new Date(game.date).toLocaleDateString('it-IT', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        const categoryName = getCategoryName(game.category);
+        const percentage = Math.round((game.score / game.totalQuestions) * 100);
+        
+        item.innerHTML = `
+            <div class="custom-game-info">
+                <strong>${game.numQuestions} domande</strong> - ${categoryName}<br>
+                <span style="font-size: 0.85rem; color: #888;">${game.player}</span>
+            </div>
+            <div class="custom-game-stats">
+                <div class="custom-game-score">${game.score}/${game.totalQuestions} (${percentage}%)</div>
+                <div class="custom-game-date">⏱️ ${game.time}s - ${date}</div>
+            </div>
+        `;
+        
+        customGamesContainer.appendChild(item);
     });
 }
 
