@@ -1012,98 +1012,246 @@ function showScreen(screen) {
     }
 }
 
+// ========== CONFIGURAZIONE GITHUB ==========
+// IMPORTANTE: Inserisci qui il tuo GitHub Personal Access Token
+// Per crearlo: GitHub Settings → Developer settings → Personal access tokens → Generate new token (classic)
+// Permessi richiesti: repo (full control of private repositories)
+const GITHUB_TOKEN = 'TUO_TOKEN_QUI'; // ← INSERISCI IL TUO TOKEN QUI
+const GITHUB_OWNER = 'F3rryX';
+const GITHUB_REPO = 'Desideria';
+
 // ========== CSV MANAGEMENT ==========
 
-// Funzione per salvare nei file CSV
+// Funzione per salvare nei file CSV su GitHub
 async function saveToCSV(record, mode) {
+    if (!GITHUB_TOKEN || GITHUB_TOKEN === 'TUO_TOKEN_QUI') {
+        console.error('❌ GitHub token non configurato! Configura il token in script.js');
+        alert('⚠️ Configurazione mancante: impossibile salvare i risultati su GitHub.\nContatta l\'amministratore.');
+        return;
+    }
+    
     try {
         const percentage = Math.round((record.score / record.totalQuestions) * 100);
         const timePerQuestion = record.totalQuestions > 0 ? 
             (record.time / record.totalQuestions).toFixed(2) : '0.00';
         
-        // Salva su GitHub tramite API
-        await saveToGitHub({
-            name: record.player,
-            time: record.time,
-            score: record.score,
-            total: record.totalQuestions,
-            percentage: percentage,
-            date: new Date(record.date).toLocaleString('it-IT'),
-            questions: record.totalQuestions,
-            timePerQuestion: timePerQuestion,
-            mode: mode
-        });
-        
-        // Backup locale nel localStorage
         const csvLine = `${record.player};${record.time};${record.score}/${record.totalQuestions};${percentage}%;${new Date(record.date).toLocaleString('it-IT')};${record.totalQuestions};${timePerQuestion}`;
         
-        const key = `csv_CSV/Tutte.csv`;
-        const existing = localStorage.getItem(key) || '';
-        localStorage.setItem(key, existing + csvLine + '\n');
+        // Salva su GitHub
+        await saveToGitHubCSV(csvLine, mode, record.player, record.time);
         
-        if (mode === 'tournament') {
-            const tournamentKey = `csv_CSV/Torneo.csv`;
-            const tournamentData = localStorage.getItem(tournamentKey) || '';
-            const lines = tournamentData.split('\n').filter(l => l.trim());
-            const filtered = lines.filter(line => !line.startsWith(record.player + ';'));
-            filtered.push(csvLine);
-            localStorage.setItem(tournamentKey, filtered.join('\n') + '\n');
-        } else {
-            const customKey = `csv_CSV/Custom.csv`;
-            const existing = localStorage.getItem(customKey) || '';
-            localStorage.setItem(customKey, existing + csvLine + '\n');
-        }
     } catch (error) {
         console.error('Errore nel salvataggio CSV:', error);
+        alert('❌ Errore nel salvataggio dei risultati. Riprova più tardi.');
     }
 }
 
-// Funzione per salvare su GitHub
-async function saveToGitHub(data) {
+// Funzione per salvare su GitHub tramite API
+async function saveToGitHubCSV(csvLine, mode, playerName, time) {
     try {
-        const response = await fetch('https://api.github.com/repos/F3rryX/Desideria/dispatches', {
-            method: 'POST',
+        // 1. Salva in Tutte.csv (tutte le partite)
+        await appendToGitHubFile('CSV/Tutte.csv', csvLine);
+        console.log('✅ Salvato in Tutte.csv');
+        
+        // 2. Salva in base alla modalità
+        if (mode === 'tournament') {
+            // Per il torneo, controlla se esiste già un record migliore
+            const torneoContent = await getGitHubFileContent('CSV/Torneo.csv');
+            const lines = torneoContent.split('\n').filter(l => l.trim());
+            
+            // Cerca record esistenti del giocatore
+            const playerLines = lines.filter(l => l.startsWith(playerName + ';'));
+            
+            if (playerLines.length === 0) {
+                // Nessun record esistente, salva questo
+                await appendToGitHubFile('CSV/Torneo.csv', csvLine);
+                console.log('✅ Primo record salvato in Torneo.csv');
+            } else {
+                // Controlla se questo è il miglior tempo
+                const existingTimes = playerLines.map(l => parseFloat(l.split(';')[1]));
+                const bestExistingTime = Math.min(...existingTimes);
+                
+                if (time < bestExistingTime) {
+                    // Nuovo record! Rimuovi il vecchio e aggiungi il nuovo
+                    const filteredLines = lines.filter(l => !l.startsWith(playerName + ';'));
+                    filteredLines.push(csvLine);
+                    await replaceGitHubFile('CSV/Torneo.csv', filteredLines.join('\n'));
+                    console.log('🏆 Nuovo record salvato in Torneo.csv!');
+                } else {
+                    console.log('⏱️ Tempo non migliore del record esistente, non salvato in Torneo.csv');
+                }
+            }
+        } else {
+            // Custom: salva tutte le partite
+            await appendToGitHubFile('CSV/Custom.csv', csvLine);
+            console.log('✅ Salvato in Custom.csv');
+        }
+        
+        alert('✅ Risultati salvati con successo su GitHub!');
+        
+    } catch (error) {
+        console.error('❌ Errore GitHub:', error);
+        throw error;
+    }
+}
+
+// Funzione per ottenere il contenuto di un file da GitHub
+async function getGitHubFileContent(filePath) {
+    try {
+        const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`, {
             headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+        
+        if (!response.ok) {
+            if (response.status === 404) {
+                // File non esiste ancora, ritorna solo l'header
+                return 'Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoPerDomanda';
+            }
+            throw new Error(`GitHub API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const content = atob(data.content); // Decodifica da base64
+        return content;
+    } catch (error) {
+        console.error('Errore nel recupero file:', error);
+        return 'Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoPerDomanda';
+    }
+}
+
+// Funzione per aggiungere una riga a un file CSV su GitHub
+async function appendToGitHubFile(filePath, newLine) {
+    try {
+        // Ottieni il contenuto corrente e lo SHA del file
+        const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`, {
+            headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+        
+        let currentContent = '';
+        let sha = '';
+        
+        if (response.ok) {
+            const data = await response.json();
+            currentContent = atob(data.content);
+            sha = data.sha;
+        } else if (response.status === 404) {
+            // File non esiste, crea con header
+            currentContent = 'Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoPerDomanda\n';
+        } else {
+            throw new Error(`GitHub API error: ${response.status}`);
+        }
+        
+        // Aggiungi la nuova riga
+        const updatedContent = currentContent + newLine + '\n';
+        
+        // Aggiorna il file su GitHub
+        const updateResponse = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
                 'Accept': 'application/vnd.github.v3+json',
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                event_type: 'save-quiz-result',
-                client_payload: data
+                message: `Add quiz result to ${filePath}`,
+                content: btoa(unescape(encodeURIComponent(updatedContent))), // Encode in base64
+                sha: sha || undefined
             })
         });
         
-        if (response.ok) {
-            console.log('✅ Risultato salvato su GitHub!');
-        } else {
-            console.warn('⚠️ Impossibile salvare su GitHub, salvato solo localmente');
+        if (!updateResponse.ok) {
+            const error = await updateResponse.json();
+            throw new Error(`Failed to update file: ${error.message}`);
         }
+        
+        return true;
     } catch (error) {
-        console.warn('⚠️ Errore connessione GitHub:', error);
+        console.error('Errore nell\'aggiornamento file:', error);
+        throw error;
+    }
+}
+
+// Funzione per sostituire completamente un file CSV su GitHub
+async function replaceGitHubFile(filePath, newContent) {
+    try {
+        // Ottieni lo SHA del file corrente
+        const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`, {
+            headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`GitHub API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const sha = data.sha;
+        
+        // Aggiungi header se non presente
+        const fullContent = newContent.includes('Nome;Tempo') ? 
+            newContent : 
+            'Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoPerDomanda\n' + newContent;
+        
+        // Sostituisci il file
+        const updateResponse = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: `Update ${filePath} with new record`,
+                content: btoa(unescape(encodeURIComponent(fullContent))),
+                sha: sha
+            })
+        });
+        
+        if (!updateResponse.ok) {
+            const error = await updateResponse.json();
+            throw new Error(`Failed to replace file: ${error.message}`);
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Errore nella sostituzione file:', error);
+        throw error;
     }
 }
 
 // Funzione di ricerca
-function performSearch() {
+async function performSearch() {
     const query = searchInput.value.trim().toLowerCase();
     if (!query) {
         alert('Inserisci un nome da cercare!');
         return;
     }
     
-    searchResultsContainer.innerHTML = '<div class="loading">🔍 Ricerca in corso...</div>';
+    if (!GITHUB_TOKEN || GITHUB_TOKEN === 'TUO_TOKEN_QUI') {
+        alert('⚠️ Configurazione mancante: impossibile cercare i risultati.\nContatta l\'amministratore.');
+        return;
+    }
     
-    setTimeout(() => {
-        // Carica i dati da Tutte.csv (dal localStorage per ora)
-        const allGamesKey = 'csv_CSV/Tutte.csv';
-        const csvData = localStorage.getItem(allGamesKey) || '';
+    searchResultsContainer.innerHTML = '<div class="loading">🔍 Ricerca in corso su GitHub...</div>';
+    
+    try {
+        // Carica i dati da Tutte.csv da GitHub
+        const csvData = await getGitHubFileContent('CSV/Tutte.csv');
         
-        if (!csvData) {
+        if (!csvData || csvData === 'Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoPerDomanda') {
             searchResultsContainer.innerHTML = '<div class="no-results">Nessuna partita trovata nel database.</div>';
             return;
         }
         
-        const lines = csvData.split('\n').filter(l => l.trim());
+        const lines = csvData.split('\n').filter(l => l.trim() && !l.startsWith('Nome;'));
         const results = lines.filter(line => {
             const playerName = line.split(';')[0].toLowerCase();
             return playerName.includes(query);
@@ -1115,20 +1263,28 @@ function performSearch() {
         }
         
         displaySearchResults(results);
-    }, 300);
+    } catch (error) {
+        console.error('Errore nella ricerca:', error);
+        searchResultsContainer.innerHTML = '<div class="no-results">❌ Errore nel caricamento dei dati. Riprova più tardi.</div>';
+    }
 }
 
-// Funzione per visualizzare i risultati della ricerca
-function displaySearchResults(results) {
+async function displaySearchResults(results) {
     searchResultsContainer.innerHTML = '';
+    
+    // Carica i dati del torneo per determinare la modalità
+    let tournamentData = '';
+    try {
+        tournamentData = await getGitHubFileContent('CSV/Torneo.csv');
+    } catch (error) {
+        console.warn('Impossibile caricare Torneo.csv:', error);
+    }
     
     results.forEach(line => {
         const parts = line.split(';');
         const [nome, tempo, corrette, percentuale, data, domande, tempoPerDomanda] = parts;
         
-        // Determina se è torneo o custom (dal localStorage separato)
-        const tournamentKey = 'csv_CSV/Torneo.csv';
-        const tournamentData = localStorage.getItem(tournamentKey) || '';
+        // Determina se è torneo o custom (confronta con Torneo.csv)
         const isTournament = tournamentData.includes(line);
         
         const item = document.createElement('div');
