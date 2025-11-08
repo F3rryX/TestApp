@@ -1021,88 +1021,66 @@ async function saveToCSV(record, mode) {
         const timePerQuestion = record.totalQuestions > 0 ? 
             (record.time / record.totalQuestions).toFixed(2) : '0.00';
         
+        // Salva su GitHub tramite API
+        await saveToGitHub({
+            name: record.player,
+            time: record.time,
+            score: record.score,
+            total: record.totalQuestions,
+            percentage: percentage,
+            date: new Date(record.date).toLocaleString('it-IT'),
+            questions: record.totalQuestions,
+            timePerQuestion: timePerQuestion,
+            mode: mode
+        });
+        
+        // Backup locale nel localStorage
         const csvLine = `${record.player};${record.time};${record.score}/${record.totalQuestions};${percentage}%;${new Date(record.date).toLocaleString('it-IT')};${record.totalQuestions};${timePerQuestion}`;
         
-        // Salva in Tutte.csv (tutte le partite)
-        await appendToCSV('CSV/Tutte.csv', csvLine);
+        const key = `csv_CSV/Tutte.csv`;
+        const existing = localStorage.getItem(key) || '';
+        localStorage.setItem(key, existing + csvLine + '\n');
         
         if (mode === 'tournament') {
-            // Per il torneo, controlla se è il miglior tempo
-            const existingRecords = await loadCSV('CSV/Torneo.csv');
-            const playerRecords = existingRecords.filter(r => r.Nome === record.player);
-            
-            if (playerRecords.length === 0) {
-                // Nessun record esistente, salva questo
-                await appendToCSV('CSV/Torneo.csv', csvLine);
-            } else {
-                // Controlla se questo tempo è migliore
-                const bestTime = Math.min(...playerRecords.map(r => parseFloat(r.Tempo)));
-                if (record.time < bestTime) {
-                    // Nuovo record! Rimuovi il vecchio e aggiungi il nuovo
-                    await replaceRecordInCSV('CSV/Torneo.csv', record.player, csvLine);
-                }
-            }
+            const tournamentKey = `csv_CSV/Torneo.csv`;
+            const tournamentData = localStorage.getItem(tournamentKey) || '';
+            const lines = tournamentData.split('\n').filter(l => l.trim());
+            const filtered = lines.filter(line => !line.startsWith(record.player + ';'));
+            filtered.push(csvLine);
+            localStorage.setItem(tournamentKey, filtered.join('\n') + '\n');
         } else {
-            // Custom: salva tutte le partite
-            await appendToCSV('CSV/Custom.csv', csvLine);
+            const customKey = `csv_CSV/Custom.csv`;
+            const existing = localStorage.getItem(customKey) || '';
+            localStorage.setItem(customKey, existing + csvLine + '\n');
         }
     } catch (error) {
         console.error('Errore nel salvataggio CSV:', error);
     }
 }
 
-// Funzione per caricare un CSV
-async function loadCSV(filename) {
+// Funzione per salvare su GitHub
+async function saveToGitHub(data) {
     try {
-        const response = await fetch(filename);
-        const text = await response.text();
-        const lines = text.trim().split('\n');
+        const response = await fetch('https://api.github.com/repos/F3rryX/Desideria/dispatches', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                event_type: 'save-quiz-result',
+                client_payload: data
+            })
+        });
         
-        if (lines.length <= 1) return []; // Solo header o vuoto
-        
-        const headers = lines[0].split(';');
-        const records = [];
-        
-        for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(';');
-            const record = {};
-            headers.forEach((header, index) => {
-                record[header] = values[index] || '';
-            });
-            records.push(record);
+        if (response.ok) {
+            console.log('✅ Risultato salvato su GitHub!');
+        } else {
+            console.warn('⚠️ Impossibile salvare su GitHub, salvato solo localmente');
         }
-        
-        return records;
     } catch (error) {
-        console.error('Errore nel caricamento CSV:', error);
-        return [];
+        console.warn('⚠️ Errore connessione GitHub:', error);
     }
-}
-
-// Funzione per aggiungere una riga al CSV
-async function appendToCSV(filename, line) {
-    // Nota: Questa è una simulazione - in un ambiente reale serve un backend
-    // Per ora salviamo nel localStorage come backup
-    const key = `csv_${filename}`;
-    const existing = localStorage.getItem(key) || '';
-    localStorage.setItem(key, existing + line + '\n');
-    console.log(`Salvato in ${filename}:`, line);
-}
-
-// Funzione per sostituire un record nel CSV (per il torneo)
-async function replaceRecordInCSV(filename, playerName, newLine) {
-    const key = `csv_${filename}`;
-    const existing = localStorage.getItem(key) || '';
-    const lines = existing.split('\n').filter(l => l.trim());
-    
-    // Rimuovi tutte le righe del giocatore
-    const filtered = lines.filter(line => !line.startsWith(playerName + ';'));
-    
-    // Aggiungi la nuova riga
-    filtered.push(newLine);
-    
-    localStorage.setItem(key, filtered.join('\n') + '\n');
-    console.log(`Aggiornato record in ${filename} per ${playerName}`);
 }
 
 // Funzione di ricerca

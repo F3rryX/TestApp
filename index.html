@@ -158,11 +158,6 @@
             </div>
 
             <div class="quiz-content-wrapper">
-                <button id="prev-btn" class="nav-arrow nav-arrow-left" style="display: none;" disabled>
-                    <span>◀</span>
-                    <span class="nav-text">Indietro</span>
-                </button>
-                
                 <div class="question-box">
                     <h2 id="question-text">Caricamento...</h2>
                     <div id="options-container" class="options-container">
@@ -175,10 +170,13 @@
                     </div>
                 </div>
 
-                <button id="next-btn" class="nav-arrow nav-arrow-right" style="display: none;">
-                    <span class="nav-text">Prossima</span>
-                    <span>▶</span>
-                </button>
+                <!-- Navigation button in the right sidebar -->
+                <div class="quiz-sidebar">
+                    <button id="next-btn" class="nav-arrow-sidebar" style="display: none;">
+                        <span class="nav-text">Prossima</span>
+                        <span>▶</span>
+                    </button>
+                </div>
             </div>
         </div>
 

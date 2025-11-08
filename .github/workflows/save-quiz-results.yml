@@ -1,0 +1,62 @@
+name: Save Quiz Results
+
+on:
+  repository_dispatch:
+    types: [save-quiz-result]
+
+permissions:
+  contents: write
+
+jobs:
+  save-result:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Save quiz result to CSV
+        run: |
+          # Extract data from event payload
+          NAME="${{ github.event.client_payload.name }}"
+          TIME="${{ github.event.client_payload.time }}"
+          SCORE="${{ github.event.client_payload.score }}"
+          TOTAL="${{ github.event.client_payload.total }}"
+          PERCENTAGE="${{ github.event.client_payload.percentage }}"
+          DATE="${{ github.event.client_payload.date }}"
+          QUESTIONS="${{ github.event.client_payload.questions }}"
+          TIME_PER_Q="${{ github.event.client_payload.timePerQuestion }}"
+          MODE="${{ github.event.client_payload.mode }}"
+          
+          # Create CSV line
+          CSV_LINE="${NAME};${TIME};${SCORE}/${TOTAL};${PERCENTAGE}%;${DATE};${QUESTIONS};${TIME_PER_Q}"
+          
+          # Append to Tutte.csv (all games)
+          echo "$CSV_LINE" >> CSV/Tutte.csv
+          
+          # For tournament mode
+          if [ "$MODE" = "tournament" ]; then
+            # Check if player already has a better record
+            if [ -f CSV/Torneo.csv ]; then
+              EXISTING=$(grep "^${NAME};" CSV/Torneo.csv | cut -d';' -f2 | sort -n | head -1)
+              if [ -z "$EXISTING" ] || [ "$TIME" -lt "$EXISTING" ]; then
+                # Remove old record and add new one
+                sed -i "/^${NAME};/d" CSV/Torneo.csv
+                echo "$CSV_LINE" >> CSV/Torneo.csv
+              fi
+            else
+              echo "$CSV_LINE" >> CSV/Torneo.csv
+            fi
+          else
+            # Custom mode - save all games
+            echo "$CSV_LINE" >> CSV/Custom.csv
+          fi
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add CSV/*.csv
+          git commit -m "Add quiz result: ${{ github.event.client_payload.name }} - ${{ github.event.client_payload.score }}/${{ github.event.client_payload.total }}" || exit 0
+          git push
