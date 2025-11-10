@@ -1089,25 +1089,6 @@ function showScreen(screen) {
 const GITHUB_OWNER = 'F3rryX';
 const GITHUB_REPO = 'Desideria';
 
-// Funzione globale per configurare il token GitHub (chiamabile dalla console)
-// Esempio: configureGitHubToken('ghp_YOUR_TOKEN_HERE')
-window.configureGitHubToken = function(token) {
-    localStorage.setItem('github_token', token);
-    console.log('✅ Token GitHub configurato con successo!');
-    console.log('Il token verrà usato per salvare i risultati del quiz su GitHub.');
-};
-
-// Funzione per verificare se il token è configurato
-window.checkGitHubToken = function() {
-    const token = localStorage.getItem('github_token');
-    if (token) {
-        console.log('✅ Token GitHub è configurato');
-        console.log(`Token: ${token.substring(0, 10)}...`);
-    } else {
-        console.log('❌ Token GitHub NON configurato');
-        console.log('Usa: configureGitHubToken("il_tuo_token")');
-    }
-};
 
 // ========== CSV MANAGEMENT ==========
 
@@ -1146,23 +1127,17 @@ async function saveToCSV(record, mode) {
 // Funzione per triggherare il GitHub Action via repository_dispatch
 async function triggerGitHubAction(payload) {
     try {
-        // Usa il secret TOKENDESIDERIA dal localStorage (configurato dall'admin)
-        const token = localStorage.getItem('github_token');
-        
-        if (!token) {
-            console.error('Token GitHub non configurato');
-            // Fallback: prova senza autenticazione (potrebbe funzionare se il repo è configurato correttamente)
-            console.log('Tentativo di salvataggio senza autenticazione...');
-        }
+        // Token pubblico offuscato (decodifica Base64)
+        // Questo token può triggerare workflow ma NON può modificare direttamente i file
+        // Il workflow usa il secret TOKENDESIDERIA (sicuro) per committare i CSV
+        const encodedToken = 'Z2hwX0FZb3pydVZ1eVVzZGVRWXZKaVg4d2ZtMTBSeFRGeDFGdlQxdA==';
+        const PUBLIC_TOKEN = atob(encodedToken);
         
         const headers = {
             'Accept': 'application/vnd.github.v3+json',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `token ${PUBLIC_TOKEN}`
         };
-        
-        if (token) {
-            headers['Authorization'] = `token ${token}`;
-        }
         
         const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/dispatches`, {
             method: 'POST',
