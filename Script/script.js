@@ -656,38 +656,15 @@ function saveRecord() {
         mode: currentQuiz.mode
     };
     
-    // Salva anche nei CSV
+    // Salva nei CSV su GitHub
     saveToCSV(newRecord, currentQuiz.mode);
     
     if (currentQuiz.mode === 'tournament') {
-        // Salva nei record torneo
-        const tournamentRecords = getTournamentRecords();
-        const categoryKey = currentQuiz.category;
-        
-        if (!tournamentRecords[categoryKey]) {
-            tournamentRecords[categoryKey] = [];
-        }
-        
-        tournamentRecords[categoryKey].push(newRecord);
-        
-        // Ordina per punteggio (decrescente) e poi per tempo (crescente)
-        tournamentRecords[categoryKey].sort((a, b) => {
-            if (b.score !== a.score) {
-                return b.score - a.score;
-            }
-            return a.time - b.time;
-        });
-        
-        // Mantieni solo i top 10
-        tournamentRecords[categoryKey] = tournamentRecords[categoryKey].slice(0, 10);
-        
-        localStorage.setItem('pizzaQuizTournamentRecords', JSON.stringify(tournamentRecords));
-        
-        // Controlla se è un nuovo record
-        return tournamentRecords[categoryKey][0].player === newRecord.player && 
-               tournamentRecords[categoryKey][0].date === newRecord.date;
+        // Per il torneo, tutti i dati sono su GitHub CSV
+        // Non salviamo più in localStorage
+        return false; // Non possiamo determinare se è record senza caricare il CSV
     } else {
-        // Salva nei record custom (cronologia)
+        // Salva nei record custom (cronologia in localStorage)
         const customGames = getCustomGames();
         customGames.unshift(newRecord); // Aggiungi all'inizio
         
@@ -732,36 +709,81 @@ function getBestRecord(numQuestions, category) {
 }
 
 // Funzione per visualizzare la classifica
-function displayLeaderboard() {
+async function displayLeaderboard() {
     if (currentQuiz.mode === 'tournament') {
-        const tournamentRecords = getTournamentRecords();
-        const categoryKey = currentQuiz.category;
-        const leaderboardData = tournamentRecords[categoryKey] || [];
+        leaderboard.innerHTML = '<div class="loading">🔍 Caricamento classifica...</div>';
         
-        if (leaderboardData.length === 0) {
-            leaderboard.innerHTML = '<p style="text-align: center; color: #999;">Nessun record ancora registrato.</p>';
-            return;
+        try {
+            // Carica Torneo.csv da GitHub
+            const response = await fetch(`https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/CSV/Torneo.csv`);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch CSV: ${response.status}`);
+            }
+            
+            const csvData = await response.text();
+            
+            if (!csvData || csvData.trim() === 'Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoMedioPerDomanda') {
+                leaderboard.innerHTML = '<p style="text-align: center; color: #999;">Nessun record ancora registrato.</p>';
+                return;
+            }
+            
+            const lines = csvData.split('\n').filter(l => l.trim() && !l.startsWith('Nome;'));
+            
+            if (lines.length === 0) {
+                leaderboard.innerHTML = '<p style="text-align: center; color: #999;">Nessun record ancora registrato.</p>';
+                return;
+            }
+            
+            // Parsing dei record
+            const records = lines.map(line => {
+                const parts = line.split(';');
+                const [nome, tempo, corrette, percentuale, data, domande, tempoPerDomanda] = parts;
+                const [score, total] = corrette.split('/').map(n => parseInt(n));
+                
+                return {
+                    player: nome,
+                    time: parseFloat(tempo),
+                    score: score,
+                    totalQuestions: total,
+                    date: data
+                };
+            });
+            
+            // Ordina per punteggio (decrescente) e poi per tempo (crescente)
+            records.sort((a, b) => {
+                if (b.score !== a.score) {
+                    return b.score - a.score;
+                }
+                return a.time - b.time;
+            });
+            
+            // Mostra solo i top 10
+            const topRecords = records.slice(0, 10);
+            
+            leaderboard.innerHTML = '';
+            topRecords.forEach((record, index) => {
+                const item = document.createElement('div');
+                item.className = `leaderboard-item ${index === 0 ? 'top-1' : index === 1 ? 'top-2' : index === 2 ? 'top-3' : ''}`;
+                
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+                
+                item.innerHTML = `
+                    <span class="leaderboard-rank">${medal}</span>
+                    <span class="leaderboard-name">${record.player}</span>
+                    <div class="leaderboard-stats">
+                        <div class="leaderboard-score">${record.score}/${record.totalQuestions}</div>
+                        <div>${record.time}s - ${record.date}</div>
+                    </div>
+                `;
+                
+                leaderboard.appendChild(item);
+            });
+            
+        } catch (error) {
+            console.error('Errore nel caricamento classifica:', error);
+            leaderboard.innerHTML = '<p style="text-align: center; color: #999;">❌ Errore nel caricamento della classifica.</p>';
         }
-        
-        leaderboard.innerHTML = '';
-        leaderboardData.forEach((record, index) => {
-            const item = document.createElement('div');
-            item.className = `leaderboard-item ${index === 0 ? 'top-1' : index === 1 ? 'top-2' : index === 2 ? 'top-3' : ''}`;
-            
-            const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
-            const date = new Date(record.date).toLocaleDateString('it-IT');
-            
-            item.innerHTML = `
-                <span class="leaderboard-rank">${medal}</span>
-                <span class="leaderboard-name">${record.player}</span>
-                <div class="leaderboard-stats">
-                    <div class="leaderboard-score">${record.score}/${record.totalQuestions}</div>
-                    <div>${record.time}s - ${date}</div>
-                </div>
-            `;
-            
-            leaderboard.appendChild(item);
-        });
     } else {
         // Per custom, mostra un messaggio diverso
         leaderboard.innerHTML = '<p style="text-align: center; color: #667eea; font-weight: 600;">Modalità Custom - Allenamento completato! ✅</p>';
@@ -924,35 +946,83 @@ function displayHomeLeaderboard() {
 }
 
 // Funzione per visualizzare la classifica torneo
-function displayTournamentLeaderboard() {
-    const tournamentRecords = getTournamentRecords();
-    const categoryRecords = tournamentRecords[selectedCategory] || [];
+// Funzione per visualizzare la classifica torneo (da GitHub CSV)
+async function displayTournamentLeaderboard() {
+    tournamentLeaderboardContainer.innerHTML = '<div class="loading">🔍 Caricamento classifica...</div>';
     
-    if (categoryRecords.length === 0) {
-        tournamentLeaderboardContainer.innerHTML = `<p class="no-records">Nessun torneo completato in questa categoria. Inizia a giocare!</p>`;
-        return;
+    try {
+        // Carica Torneo.csv direttamente dal raw GitHub
+        const response = await fetch(`https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/CSV/Torneo.csv`);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fetch CSV: ${response.status}`);
+        }
+        
+        const csvData = await response.text();
+        
+        if (!csvData || csvData.trim() === 'Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoMedioPerDomanda') {
+            tournamentLeaderboardContainer.innerHTML = `<p class="no-records">Nessun torneo completato ancora. Inizia a giocare!</p>`;
+            return;
+        }
+        
+        const lines = csvData.split('\n').filter(l => l.trim() && !l.startsWith('Nome;'));
+        
+        if (lines.length === 0) {
+            tournamentLeaderboardContainer.innerHTML = `<p class="no-records">Nessun torneo completato ancora. Inizia a giocare!</p>`;
+            return;
+        }
+        
+        // Parsing dei record
+        const records = lines.map(line => {
+            const parts = line.split(';');
+            const [nome, tempo, corrette, percentuale, data, domande, tempoPerDomanda] = parts;
+            const [score, total] = corrette.split('/').map(n => parseInt(n));
+            
+            return {
+                player: nome,
+                time: parseFloat(tempo),
+                score: score,
+                totalQuestions: total,
+                percentage: parseInt(percentuale.replace('%', '')),
+                date: data,
+                questions: parseInt(domande)
+            };
+        });
+        
+        // Ordina per punteggio (decrescente) e poi per tempo (crescente)
+        records.sort((a, b) => {
+            if (b.score !== a.score) {
+                return b.score - a.score;
+            }
+            return a.time - b.time;
+        });
+        
+        // Mostra solo i top 10
+        const topRecords = records.slice(0, 10);
+        
+        tournamentLeaderboardContainer.innerHTML = '';
+        topRecords.forEach((record, index) => {
+            const item = document.createElement('div');
+            item.className = `leaderboard-item ${index === 0 ? 'top-1' : index === 1 ? 'top-2' : index === 2 ? 'top-3' : ''}`;
+            
+            const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+            
+            item.innerHTML = `
+                <span class="leaderboard-rank">${medal}</span>
+                <span class="leaderboard-name">${record.player}</span>
+                <div class="leaderboard-stats">
+                    <div class="leaderboard-score">${record.score}/${record.totalQuestions} (${record.percentage}%)</div>
+                    <div>⏱️ ${record.time}s - ${record.date}</div>
+                </div>
+            `;
+            
+            tournamentLeaderboardContainer.appendChild(item);
+        });
+        
+    } catch (error) {
+        console.error('Errore nel caricamento classifica torneo:', error);
+        tournamentLeaderboardContainer.innerHTML = '<div class="no-results">❌ Errore nel caricamento della classifica. Riprova più tardi.</div>';
     }
-    
-    tournamentLeaderboardContainer.innerHTML = '';
-    categoryRecords.forEach((record, index) => {
-        const item = document.createElement('div');
-        item.className = `leaderboard-item ${index === 0 ? 'top-1' : index === 1 ? 'top-2' : index === 2 ? 'top-3' : ''}`;
-        
-        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
-        const date = new Date(record.date).toLocaleDateString('it-IT');
-        const percentage = Math.round((record.score / record.totalQuestions) * 100);
-        
-        item.innerHTML = `
-            <span class="leaderboard-rank">${medal}</span>
-            <span class="leaderboard-name">${record.player}</span>
-            <div class="leaderboard-stats">
-                <div class="leaderboard-score">${record.score}/${record.totalQuestions} (${percentage}%)</div>
-                <div>⏱️ ${record.time}s - ${date}</div>
-            </div>
-        `;
-        
-        tournamentLeaderboardContainer.appendChild(item);
-    });
 }
 
 // Funzione per visualizzare le partite custom
