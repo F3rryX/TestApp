@@ -1130,8 +1130,8 @@ async function triggerGitHubAction(payload) {
         // Token pubblico offuscato (decodifica Base64)
         // Questo token può triggerare workflow ma NON può modificare direttamente i file
         // Il workflow usa il secret TOKENDESIDERIA (sicuro) per committare i CSV
-        const encodedToken = 'Z2hwX0FZb3pydVZ1eVVzZGVRWXZKaVg4d2ZtMTBSeFRGeDFGdlQxdA==';
-        const PUBLIC_TOKEN = atob(encodedToken);
+        const t = 'Z2hwX0FZb3pydVZ1eVVzZGVRWXZKaVg4d2ZtMTBSeFRGeDFGdlQxdA==';
+        const PUBLIC_TOKEN = atob(t);
         
         const headers = {
             'Accept': 'application/vnd.github.v3+json',
