@@ -1127,11 +1127,10 @@ async function saveToCSV(record, mode) {
 // Funzione per triggherare il GitHub Action via repository_dispatch
 async function triggerGitHubAction(payload) {
     try {
-        // Token pubblico offuscato (decodifica Base64)
+        // Token pubblico con permessi limitati (solo public_repo e workflow)
         // Questo token può triggerare workflow ma NON può modificare direttamente i file
         // Il workflow usa il secret TOKENDESIDERIA (sicuro) per committare i CSV
-        const t = 'Z2hwX0FZb3pydVZ1eVVzZGVRWXZKaVg4d2ZtMTBSeFRGeDFGdlQxdA==';
-        const PUBLIC_TOKEN = atob(t);
+        const PUBLIC_TOKEN = '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';
         
         const headers = {
             'Accept': 'application/vnd.github.v3+json',
