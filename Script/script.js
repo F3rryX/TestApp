@@ -653,7 +653,8 @@ function saveRecord() {
         date: new Date().toISOString(),
         category: currentQuiz.category,
         numQuestions: currentQuiz.numQuestions,
-        mode: currentQuiz.mode
+        mode: currentQuiz.mode,
+        timePerQuestion: timer.totalSeconds || 15 // Tempo disponibile per domanda (default 15)
     };
     
     // Salva nei CSV su GitHub
@@ -724,7 +725,7 @@ async function displayLeaderboard() {
             
             const csvData = await response.text();
             
-            if (!csvData || csvData.trim() === 'Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoMedioPerDomanda') {
+            if (!csvData || csvData.trim() === 'Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoDomanda') {
                 leaderboard.innerHTML = '<p style="text-align: center; color: #999;">Nessun record ancora registrato.</p>';
                 return;
             }
@@ -962,7 +963,7 @@ async function displayTournamentLeaderboard() {
         
         const csvData = await response.text();
         
-        if (!csvData || csvData.trim() === 'Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoMedioPerDomanda') {
+        if (!csvData || csvData.trim() === 'Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoDomanda') {
             tournamentLeaderboardContainer.innerHTML = `<p class="no-records">Nessun torneo completato ancora. Inizia a giocare!</p>`;
             return;
         }
@@ -1114,8 +1115,8 @@ window.checkGitHubToken = function() {
 async function saveToCSV(record, mode) {
     try {
         const percentage = Math.round((record.score / record.totalQuestions) * 100);
-        const timePerQuestion = record.totalQuestions > 0 ? 
-            (record.time / record.totalQuestions).toFixed(2) : '0.00';
+        // TempoDomanda = tempo disponibile per ogni domanda (non tempo medio impiegato)
+        const timePerQuestion = record.timePerQuestion || 15; // Default 15 secondi se non specificato
         
         // Prepara i dati da inviare al workflow GitHub Actions
         const payload = {
@@ -1126,7 +1127,7 @@ async function saveToCSV(record, mode) {
             percentage: percentage.toString(),
             date: new Date(record.date).toLocaleString('it-IT'),
             questions: record.totalQuestions.toString(),
-            time_per_question: timePerQuestion,
+            time_per_question: timePerQuestion.toString(),
             mode: mode
         };
         
@@ -1205,7 +1206,7 @@ async function performSearch() {
         
         const csvData = await response.text();
         
-        if (!csvData || csvData.trim() === 'Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoMedioPerDomanda') {
+        if (!csvData || csvData.trim() === 'Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoDomanda') {
             searchResultsContainer.innerHTML = '<div class="no-results">Nessuna partita trovata nel database.</div>';
             return;
         }

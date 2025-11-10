@@ -31,13 +31,13 @@ jobs:
           
           # Ensure CSV files exist with headers
           if [ ! -f CSV/Tutte.csv ]; then
-            echo "Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoMedioPerDomanda" > CSV/Tutte.csv
+            echo "Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoDomanda" > CSV/Tutte.csv
           fi
           if [ ! -f CSV/Torneo.csv ]; then
-            echo "Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoMedioPerDomanda" > CSV/Torneo.csv
+            echo "Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoDomanda" > CSV/Torneo.csv
           fi
           if [ ! -f CSV/Custom.csv ]; then
-            echo "Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoMedioPerDomanda" > CSV/Custom.csv
+            echo "Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoDomanda" > CSV/Custom.csv
           fi
           
           # Append to Tutte.csv (all games) with newline
