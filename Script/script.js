@@ -1091,9 +1091,7 @@ function showScreen(screen) {
 // ========== CONFIGURAZIONE GITHUB ==========
 const GITHUB_OWNER = 'F3rryX';
 const GITHUB_REPO = 'Desideria';
-// Token pubblico Base64 (decodificato runtime) - ha solo permessi public_repo + workflow
-// NOTA: Il browser non può leggere .env - questo token deve essere codificato qui
-const TOKEN = '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';
+// Il token è ora gestito dal server Node.js (server.js) in modo sicuro tramite .env
 
 
 // ========== CSV MANAGEMENT ==========
@@ -1130,36 +1128,30 @@ async function saveToCSV(record, mode) {
     }
 }
 
-// Funzione per triggherare il GitHub Action via repository_dispatch
+// Funzione per triggherare il GitHub Action via server locale (più sicuro)
 async function triggerGitHubAction(payload) {
     try {
-        // Token pubblico con permessi limitati (solo public_repo e workflow)
-        // Questo token può triggerare workflow ma NON può modificare direttamente i file
-        // Il workflow usa il secret TOKENDESIDERIA (sicuro) per committare i CSV
-        
-        const headers = {
-            'Accept': 'application/vnd.github.v3+json',
-            'Content-Type': 'application/json',
-            'Authorization': `token ${TOKEN}`
-        };
-        
-        const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/dispatches`, {
+        // Chiama il server locale Node.js invece di GitHub API direttamente
+        // Il server gestisce il token in modo sicuro dal file .env
+        const response = await fetch('http://localhost:3000/api/save-result', {
             method: 'POST',
-            headers: headers,
-            body: JSON.stringify({
-                event_type: 'save-quiz-result',
-                client_payload: payload
-            })
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
         });
         
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(`GitHub API error: ${response.status} - ${errorData.message || 'Unknown error'}`);
+            throw new Error(`Server error: ${response.status} - ${errorData.error || 'Unknown error'}`);
         }
+        
+        const result = await response.json();
+        console.log('✅ Risultato salvato:', result.message);
         
         return true;
     } catch (error) {
-        console.error('Errore nel trigger GitHub Action:', error);
+        console.error('Errore nel salvataggio:', error);
         throw error;
     }
 }
