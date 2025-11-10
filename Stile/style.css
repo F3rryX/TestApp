@@ -162,8 +162,8 @@ header h1 {
 
 .mode-card {
     padding: 30px 20px;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border: 3px solid transparent;
+    background: linear-gradient(135deg, #d8dce6 0%, #c5cad8 100%);
+    border: 3px solid #9ca3af;
     border-radius: 15px;
     text-align: center;
     cursor: pointer;
@@ -171,8 +171,9 @@ header h1 {
 }
 
 body.dark-mode .mode-card {
-    background: linear-gradient(135deg, #2a2f45 0%, #353b52 100%);
+    background: linear-gradient(135deg, #3a3f55 0%, #454b62 100%);
     color: var(--text-primary);
+    border-color: #5a5f75;
 }
 
 .mode-card:hover {
@@ -189,7 +190,7 @@ body.dark-mode .mode-card {
 }
 
 .mode-icon {
-    font-size: 3rem;
+    font-size: 4.5rem;
     margin-bottom: 15px;
 }
 
@@ -472,57 +473,61 @@ body.dark-mode .home-record-item.fastest {
 .quiz-content-wrapper {
     display: flex;
     align-items: stretch;
-    gap: 20px;
+    gap: 30px;
     position: relative;
 }
 
-/* Quiz Sidebar (right area) */
+/* Quiz Sidebar (right area) - Fuori dal contenitore scorrevole */
 .quiz-sidebar {
     flex-shrink: 0;
-    width: 200px;
+    width: 80px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    padding-left: 10px;
 }
 
-/* Navigation Arrow in Sidebar */
+/* Navigation Arrow in Sidebar - Design semplice freccia */
 .nav-arrow-sidebar {
-    width: 100%;
-    padding: 20px;
-    border-radius: 12px;
-    border: 2px solid var(--button-primary-bg);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
     background: var(--button-primary-bg);
     color: white;
-    font-size: 1.1rem;
-    font-weight: 600;
+    font-size: 2rem;
     cursor: pointer;
     transition: all 0.3s;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
+    padding: 0;
 }
 
 .nav-arrow-sidebar:hover:not(:disabled) {
     background: var(--button-primary-hover);
-    transform: translateY(-3px);
+    transform: scale(1.1);
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
 }
 
 .nav-arrow-sidebar:disabled {
-    opacity: 0.3;
+    background: #ccc;
     cursor: not-allowed;
+    opacity: 0.5;
+    box-shadow: none;
 }
 
-.nav-arrow-sidebar span {
-    line-height: 1;
+/* Testo nascosto su desktop, mostra solo freccia */
+.nav-arrow-sidebar .arrow-text {
+    display: none;
 }
 
-.nav-arrow-sidebar .nav-text {
-    font-size: 1.1rem;
+.nav-arrow-sidebar .arrow-icon {
+    font-size: 2rem;
 }
+
 
 .nav-arrow-sidebar span:not(.nav-text) {
     font-size: 1.5rem;
@@ -742,6 +747,18 @@ body.dark-mode .home-record-item.fastest {
     
     #next-btn-mobile {
         width: 100%;
+        padding: 18px 25px;
+        font-size: 1.2rem;
+        font-weight: 600;
+        background: linear-gradient(135deg, #5a67d8 0%, #667eea 100%);
+        border: none;
+        border-radius: 12px;
+        color: white;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .mode-icon {
+        font-size: 5rem;
     }
 }
 
