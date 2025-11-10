@@ -1132,7 +1132,7 @@ async function performSearch() {
         
         const csvData = await response.text();
         
-        if (!csvData || csvData.trim() === 'Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoPerDomanda') {
+        if (!csvData || csvData.trim() === 'Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoMedioPerDomanda') {
             searchResultsContainer.innerHTML = '<div class="no-results">Nessuna partita trovata nel database.</div>';
             return;
         }

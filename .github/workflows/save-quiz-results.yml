@@ -29,8 +29,19 @@ jobs:
           # Create CSV line
           CSV_LINE="${PLAYER_NAME};${TIME};${SCORE}/${TOTAL};${PERCENTAGE}%;${DATE};${QUESTIONS};${TIME_PER_Q}"
           
-          # Append to Tutte.csv (all games)
-          echo "$CSV_LINE" >> CSV/Tutte.csv
+          # Ensure CSV files exist with headers
+          if [ ! -f CSV/Tutte.csv ]; then
+            echo "Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoMedioPerDomanda" > CSV/Tutte.csv
+          fi
+          if [ ! -f CSV/Torneo.csv ]; then
+            echo "Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoMedioPerDomanda" > CSV/Torneo.csv
+          fi
+          if [ ! -f CSV/Custom.csv ]; then
+            echo "Nome;Tempo;Corrette;Percentuale;Data;Domande;TempoMedioPerDomanda" > CSV/Custom.csv
+          fi
+          
+          # Append to Tutte.csv (all games) with newline
+          echo "${CSV_LINE}" >> CSV/Tutte.csv
           
           # For tournament mode
           if [ "$MODE" = "tournament" ]; then
@@ -42,15 +53,15 @@ jobs:
               if [ "$(echo "$TIME < $EXISTING_TIME" | bc)" -eq 1 ]; then
                 # Remove old record and add new one
                 sed -i "/^${PLAYER_NAME};/d" CSV/Torneo.csv
-                echo "$CSV_LINE" >> CSV/Torneo.csv
+                echo "${CSV_LINE}" >> CSV/Torneo.csv
               fi
             else
               # No existing record, add this one
-              echo "$CSV_LINE" >> CSV/Torneo.csv
+              echo "${CSV_LINE}" >> CSV/Torneo.csv
             fi
           else
             # Custom mode - save all games
-            echo "$CSV_LINE" >> CSV/Custom.csv
+            echo "${CSV_LINE}" >> CSV/Custom.csv
           fi
 
       - name: Commit and push
