@@ -11,16 +11,17 @@ let currentQuiz = {
 };
 
 // Elementi DOM
-const screens = {
-    home: document.getElementById('home-screen'),
-    custom: document.getElementById('custom-screen'),
-    quiz: document.getElementById('quiz-screen'),
-    results: document.getElementById('results-screen')
-};
+let screens = {};
 
 // Funzioni di navigazione
 function showScreen(screenName) {
-    Object.values(screens).forEach(screen => screen.classList.remove('active'));
+    if (!screens || !screens[screenName]) {
+        console.error('Screens not initialized or invalid screen name:', screenName);
+        return;
+    }
+    Object.values(screens).forEach(screen => {
+        if (screen) screen.classList.remove('active');
+    });
     screens[screenName].classList.add('active');
 }
 
@@ -88,14 +89,27 @@ function restartQuiz() {
 function startQuiz(config) {
     resetQuiz();
     
-    currentQuiz.questions = generateQuestions(config);
-    currentQuiz.timePerQuestion = config.timePerQuestion;
-    currentQuiz.currentQuestionIndex = 0;
-    currentQuiz.score = 0;
-    currentQuiz.answers = [];
-    
-    showScreen('quiz');
-    displayQuestion();
+    try {
+        currentQuiz.questions = generateQuestions(config);
+        
+        if (!currentQuiz.questions || currentQuiz.questions.length === 0) {
+            alert('Errore: impossibile generare le domande. Verifica le impostazioni.');
+            showScreen('home');
+            return;
+        }
+        
+        currentQuiz.timePerQuestion = config.timePerQuestion;
+        currentQuiz.currentQuestionIndex = 0;
+        currentQuiz.score = 0;
+        currentQuiz.answers = [];
+        
+        showScreen('quiz');
+        displayQuestion();
+    } catch (error) {
+        console.error('Errore durante l\'avvio del quiz:', error);
+        alert('Errore durante l\'avvio del quiz. Riprova.');
+        showScreen('home');
+    }
 }
 
 function resetQuiz() {
@@ -320,6 +334,15 @@ function showResults() {
 }
 
 // Inizializzazione
+// Inizializzazione
 document.addEventListener('DOMContentLoaded', () => {
+    // Inizializza elementi DOM
+    screens = {
+        home: document.getElementById('home-screen'),
+        custom: document.getElementById('custom-screen'),
+        quiz: document.getElementById('quiz-screen'),
+        results: document.getElementById('results-screen')
+    };
+    
     showScreen('home');
 });

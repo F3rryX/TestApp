@@ -196,9 +196,22 @@ const questionGenerator = {
 
     getAllIngredients() {
         const ingredients = new Set();
-        Object.values(pizzaDatabase).flat().forEach(pizza => {
-            pizza.ingredienti.forEach(ing => ingredients.add(ing));
+        // Solo pizze e calzoni (hanno ingredienti)
+        const pizzaArrays = [
+            pizzaDatabase.classiche,
+            pizzaDatabase.bianche,
+            pizzaDatabase.difficili,
+            pizzaDatabase.calzoni
+        ];
+        
+        pizzaArrays.forEach(pizzaArray => {
+            pizzaArray.forEach(pizza => {
+                if (pizza.ingredienti) {
+                    pizza.ingredienti.forEach(ing => ingredients.add(ing));
+                }
+            });
         });
+        
         return Array.from(ingredients);
     },
 
